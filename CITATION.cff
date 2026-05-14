@@ -18,8 +18,11 @@ authors:
     affiliation: "Independent Researcher"
 identifiers:
   - type: doi
-    value: "PENDING_CONCEPT_DOI"
-    description: "Concept DOI (always resolves to the latest version). Filled in on first Zenodo release."
+    value: "10.5281/zenodo.20188013"
+    description: "Concept DOI (always resolves to the latest version)."
+  - type: doi
+    value: "10.5281/zenodo.20188014"
+    description: "Version DOI for v0.1.0-prereg."
 license: MIT
 repository-code: "https://github.com/mhdk1602/hurst-aware-partitioning"
 type: software
