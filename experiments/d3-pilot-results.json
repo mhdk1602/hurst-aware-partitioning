@@ -1,6 +1,6 @@
 {
   "summary": {
-    "version": "0.2.0",
+    "version": "0.2.1",
     "release": "v0.2.0",
     "dataset": "D3 (synthetic fGn pilot)",
     "n_persistent_series": 16,
@@ -8,13 +8,13 @@
     "n_rejections_after_holm": 2,
     "median_hl_shift_across_comparisons": 7128.0,
     "fit_seconds_total": {
-      "hurst-ci": 344.56,
-      "fixed-daily": 0.01,
+      "hurst-ci": 286.21,
+      "fixed-daily": 0.02,
       "fixed-monthly": 0.0,
       "variance-cusum": 0.01,
       "equal-rows": 0.0
     },
-    "wall_seconds_total": 446.48
+    "wall_seconds_total": 369.96
   },
   "pilot_settings": {
     "n_corpus": 1024,
@@ -31,7 +31,12 @@
     "row_byte_size": 16,
     "workload_seed": 20260514,
     "rng_seed": 20260514,
-    "note": "Pilot deviations vs prereg \u00a75: rolling n_bootstrap reduced from 1000 to 50, step from 20 to 200, series subsampled to length=4096 only. These relax-for-speed choices are pilot-only; the v0.3 full run on D1/D2 uses the registered values."
+    "d4_n_corpus_protocol": 256,
+    "d4_n_corpus_pilot": 32,
+    "d4_segment_length": 4096,
+    "d4_n_segments": 4,
+    "d4_boundary_tol_floor": 50,
+    "note": "Pilot deviations vs prereg \u00a75: rolling n_bootstrap reduced from 1000 to 50, step from 20 to 200, series subsampled to length=4096 only. These relax-for-speed choices are pilot-only; the v0.3 full run on D1/D2 uses the registered values. Amendment 1 D4 pilot: n_series=32 in v0.2.1, n_series=256 from v0.3+. Boundary-F1 tolerance = max(window // 4, 50) = 125."
   },
   "workload_sha256": "76b0c6d9a5d3f74be7f660b7b24841dc16deb59c044d0d1c676d9e75573ddbd7",
   "subsample_series": [
@@ -231,8 +236,8 @@
       "p_holm": 6.661579725877698e-69,
       "reject": true,
       "hl_shift": 14256.0,
-      "hl_ci_low": 13984.0,
-      "hl_ci_high": 14832.0
+      "hl_ci_low": 14048.0,
+      "hl_ci_high": 15024.0
     },
     {
       "label": "D3-persistent \u00d7 fixed-monthly \u00d7 dfa",
@@ -249,8 +254,8 @@
       "p_holm": 4.826240481907911e-235,
       "reject": true,
       "hl_shift": 26184.0,
-      "hl_ci_low": 25256.0,
-      "hl_ci_high": 27072.2
+      "hl_ci_low": 25312.0,
+      "hl_ci_high": 27024.0
     },
     {
       "label": "D3-persistent \u00d7 equal-rows \u00d7 dfa",
@@ -275,5 +280,547 @@
     "fixed-monthly": 34313.44,
     "variance-cusum": 8005.4,
     "equal-rows": 34313.44
+  },
+  "d4_pilot": {
+    "release": "v0.2.1",
+    "dataset": "D4 (regime-switching fGn pilot, Amendment 1)",
+    "n_series": 32,
+    "tolerance": 125,
+    "true_boundaries": [
+      4096,
+      8192,
+      12288
+    ],
+    "segment_length": 4096,
+    "n_segments": 4,
+    "per_partitioner": {
+      "hurst-ci": {
+        "mean_f1": 0.0125,
+        "se_f1": 0.012499999999999999,
+        "n_series": 32,
+        "mean_n_predicted": 0.625,
+        "per_series_f1": [
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.4,
+          0.0
+        ],
+        "fit_seconds_total": 2530.08
+      },
+      "fixed-daily": {
+        "mean_f1": 0.0,
+        "se_f1": 0.0,
+        "n_series": 32,
+        "mean_n_predicted": 11.0,
+        "per_series_f1": [
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ],
+        "fit_seconds_total": 0.03
+      },
+      "fixed-monthly": {
+        "mean_f1": 0.0,
+        "se_f1": 0.0,
+        "n_series": 32,
+        "mean_n_predicted": 0.0,
+        "per_series_f1": [
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ],
+        "fit_seconds_total": 0.01
+      },
+      "variance-cusum": {
+        "mean_f1": 0.009415182138703744,
+        "se_f1": 0.0007988200371715165,
+        "n_series": 32,
+        "mean_n_predicted": 472.53125,
+        "per_series_f1": [
+          0.009592326139088728,
+          0.010025062656641605,
+          0.003696857670979667,
+          0.014492753623188404,
+          0.007326007326007326,
+          0.007547169811320756,
+          0.016666666666666666,
+          0.007532956685499058,
+          0.007547169811320756,
+          0.003696857670979667,
+          0.008,
+          0.016997167138810197,
+          0.007434944237918216,
+          0.003636363636363636,
+          0.014851485148514849,
+          0.008438818565400843,
+          0.014634146341463415,
+          0.014563106796116505,
+          0.01474201474201474,
+          0.0036563071297989035,
+          0.007352941176470587,
+          0.01431980906921241,
+          0.017045454545454548,
+          0.0036764705882352936,
+          0.007380073800738007,
+          0.008547008547008548,
+          0.007590132827324478,
+          0.015,
+          0.003717472118959108,
+          0.0035971223021582736,
+          0.007285974499089254,
+          0.010695187165775402
+        ],
+        "fit_seconds_total": 0.07
+      },
+      "equal-rows": {
+        "mean_f1": 0.0,
+        "se_f1": 0.0,
+        "n_series": 32,
+        "mean_n_predicted": 1.0,
+        "per_series_f1": [
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ],
+        "fit_seconds_total": 0.0
+      }
+    },
+    "series_meta": [
+      {
+        "series_id": 0,
+        "true_Hs": [
+          0.3,
+          0.7,
+          0.55,
+          0.3
+        ],
+        "seed": 1318328052
+      },
+      {
+        "series_id": 1,
+        "true_Hs": [
+          0.3,
+          0.55,
+          0.85,
+          0.3
+        ],
+        "seed": 945268202
+      },
+      {
+        "series_id": 2,
+        "true_Hs": [
+          0.55,
+          0.85,
+          0.7,
+          0.3
+        ],
+        "seed": 1930627517
+      },
+      {
+        "series_id": 3,
+        "true_Hs": [
+          0.3,
+          0.85,
+          0.3,
+          0.85
+        ],
+        "seed": 340410303
+      },
+      {
+        "series_id": 4,
+        "true_Hs": [
+          0.7,
+          0.3,
+          0.85,
+          0.55
+        ],
+        "seed": 761021358
+      },
+      {
+        "series_id": 5,
+        "true_Hs": [
+          0.7,
+          0.55,
+          0.3,
+          0.55
+        ],
+        "seed": 1796366895
+      },
+      {
+        "series_id": 6,
+        "true_Hs": [
+          0.55,
+          0.85,
+          0.55,
+          0.7
+        ],
+        "seed": 1331361682
+      },
+      {
+        "series_id": 7,
+        "true_Hs": [
+          0.55,
+          0.3,
+          0.7,
+          0.55
+        ],
+        "seed": 1500858349
+      },
+      {
+        "series_id": 8,
+        "true_Hs": [
+          0.55,
+          0.3,
+          0.7,
+          0.55
+        ],
+        "seed": 886216683
+      },
+      {
+        "series_id": 9,
+        "true_Hs": [
+          0.7,
+          0.55,
+          0.7,
+          0.3
+        ],
+        "seed": 578874519
+      },
+      {
+        "series_id": 10,
+        "true_Hs": [
+          0.85,
+          0.55,
+          0.7,
+          0.85
+        ],
+        "seed": 1260566678
+      },
+      {
+        "series_id": 11,
+        "true_Hs": [
+          0.85,
+          0.7,
+          0.85,
+          0.7
+        ],
+        "seed": 204073330
+      },
+      {
+        "series_id": 12,
+        "true_Hs": [
+          0.85,
+          0.3,
+          0.85,
+          0.55
+        ],
+        "seed": 583476686
+      },
+      {
+        "series_id": 13,
+        "true_Hs": [
+          0.3,
+          0.85,
+          0.7,
+          0.55
+        ],
+        "seed": 1762435288
+      },
+      {
+        "series_id": 14,
+        "true_Hs": [
+          0.3,
+          0.55,
+          0.3,
+          0.7
+        ],
+        "seed": 1430393402
+      },
+      {
+        "series_id": 15,
+        "true_Hs": [
+          0.7,
+          0.55,
+          0.7,
+          0.85
+        ],
+        "seed": 1928910944
+      },
+      {
+        "series_id": 16,
+        "true_Hs": [
+          0.7,
+          0.3,
+          0.85,
+          0.3
+        ],
+        "seed": 1545212904
+      },
+      {
+        "series_id": 17,
+        "true_Hs": [
+          0.7,
+          0.3,
+          0.55,
+          0.3
+        ],
+        "seed": 816354367
+      },
+      {
+        "series_id": 18,
+        "true_Hs": [
+          0.7,
+          0.3,
+          0.7,
+          0.3
+        ],
+        "seed": 741315227
+      },
+      {
+        "series_id": 19,
+        "true_Hs": [
+          0.3,
+          0.7,
+          0.55,
+          0.85
+        ],
+        "seed": 652961715
+      },
+      {
+        "series_id": 20,
+        "true_Hs": [
+          0.7,
+          0.55,
+          0.3,
+          0.85
+        ],
+        "seed": 1948571781
+      },
+      {
+        "series_id": 21,
+        "true_Hs": [
+          0.7,
+          0.3,
+          0.7,
+          0.3
+        ],
+        "seed": 1527812815
+      },
+      {
+        "series_id": 22,
+        "true_Hs": [
+          0.7,
+          0.85,
+          0.7,
+          0.85
+        ],
+        "seed": 1257403132
+      },
+      {
+        "series_id": 23,
+        "true_Hs": [
+          0.3,
+          0.7,
+          0.55,
+          0.7
+        ],
+        "seed": 1760936006
+      },
+      {
+        "series_id": 24,
+        "true_Hs": [
+          0.7,
+          0.3,
+          0.7,
+          0.85
+        ],
+        "seed": 1757505197
+      },
+      {
+        "series_id": 25,
+        "true_Hs": [
+          0.7,
+          0.85,
+          0.55,
+          0.7
+        ],
+        "seed": 510493773
+      },
+      {
+        "series_id": 26,
+        "true_Hs": [
+          0.7,
+          0.55,
+          0.3,
+          0.7
+        ],
+        "seed": 1756823114
+      },
+      {
+        "series_id": 27,
+        "true_Hs": [
+          0.55,
+          0.3,
+          0.55,
+          0.3
+        ],
+        "seed": 48066878
+      },
+      {
+        "series_id": 28,
+        "true_Hs": [
+          0.7,
+          0.55,
+          0.7,
+          0.3
+        ],
+        "seed": 527123449
+      },
+      {
+        "series_id": 29,
+        "true_Hs": [
+          0.3,
+          0.7,
+          0.85,
+          0.7
+        ],
+        "seed": 1715944898
+      },
+      {
+        "series_id": 30,
+        "true_Hs": [
+          0.55,
+          0.85,
+          0.3,
+          0.85
+        ],
+        "seed": 794490207
+      },
+      {
+        "series_id": 31,
+        "true_Hs": [
+          0.55,
+          0.85,
+          0.7,
+          0.55
+        ],
+        "seed": 2046072918
+      }
+    ]
   }
 }

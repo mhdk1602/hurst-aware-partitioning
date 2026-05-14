@@ -20,6 +20,13 @@ SP500_50_TICKERS_FILE = Path(__file__).parent / "data" / "sp500_50_tickers.txt"
 FGN_LENGTHS = (4096, 16384, 65536)
 FGN_HURSTS = (0.3, 0.5, 0.7, 0.85)
 
+# Amendment 1 (D4). Per-segment H pool and adjacency constraint.
+D4_SEGMENT_HURSTS = (0.30, 0.55, 0.70, 0.85)
+D4_SEGMENT_LENGTH = 4096
+D4_N_SEGMENTS = 4
+D4_MIN_ADJACENT_GAP = 0.15
+D4_MAX_RESAMPLE_ATTEMPTS = 50
+
 
 @dataclass(frozen=True)
 class DatasetSpec:
@@ -126,5 +133,127 @@ def make_fgn_corpus(
         s.attrs["series_id"] = sid
         s.attrs["seed"] = sseed
         s.attrs["dataset_id"] = "D3"
+        corpus.append(s)
+    return corpus
+
+
+def make_regime_switching_corpus(
+    seed: int = REGISTERED_FGN_SEED,
+    n_series: int = 256,
+) -> list[pd.Series]:
+    """D4 — synthetic regime-switching fGn corpus (Amendment 1).
+
+    Each series is four concatenated fGn segments of length ``D4_SEGMENT_LENGTH``,
+    so total length is ``D4_SEGMENT_LENGTH * D4_N_SEGMENTS`` = 16384. The per-segment
+    H is drawn from ``D4_SEGMENT_HURSTS`` (= {0.30, 0.55, 0.70, 0.85}) under the
+    constraint that adjacent segments differ in H by at least
+    ``D4_MIN_ADJACENT_GAP`` (= 0.15). The three internal segment-start positions
+    constitute the ground-truth boundaries for M-S6.
+
+    Determinism mirrors :func:`make_fgn_corpus`: a master ``SeedSequence(seed)``
+    spawns ``n_series`` per-series sequences, each of which then spawns 4 per-segment
+    sequences. The result for ``series_id = i`` is therefore invariant to
+    ``n_series``: a call with ``n_series=4`` returns the same first 4 series as a
+    call with ``n_series=256``.
+
+    Per series the following ``attrs`` are populated:
+      * ``dataset_id`` — ``"D4"``
+      * ``series_id`` — int ``i``
+      * ``seed`` — the integer seed passed to the ``fbm`` generator (informational;
+        the actual segment values are seeded via the spawned ``SeedSequence``)
+      * ``true_boundaries`` — ``np.array([4096, 8192, 12288])``
+      * ``true_Hs`` — ``np.array([H1, H2, H3, H4])``
+
+    Parameters
+    ----------
+    seed : int
+        Registered seed (20260514). Changing this is a §14 deviation.
+    n_series : int
+        Number of series to generate. The amendment fixes the protocol value
+        at 256; the v0.2.1 pilot in ``replicate.py`` uses 32 to keep wall time
+        bounded.
+
+    Returns
+    -------
+    list[pandas.Series]
+        Length ``n_series``. Each series has a 1-minute ``DatetimeIndex`` starting
+        2020-01-01 and dtype float64.
+
+    Raises
+    ------
+    RuntimeError
+        If the adjacent-H gap constraint cannot be satisfied within
+        ``D4_MAX_RESAMPLE_ATTEMPTS`` attempts for some series.
+    """
+    from fbm import FBM
+
+    master = np.random.SeedSequence(int(seed))
+    series_seeds = master.spawn(int(n_series))
+
+    total_length = D4_SEGMENT_LENGTH * D4_N_SEGMENTS
+    # Internal segment starts (the ground-truth boundaries). The implicit
+    # boundary at position 0 is not part of M-S6 ground truth: only the
+    # three regime changes are.
+    true_boundaries = np.asarray(
+        [D4_SEGMENT_LENGTH * k for k in range(1, D4_N_SEGMENTS)],
+        dtype=np.int64,
+    )
+
+    corpus: list[pd.Series] = []
+    for sid in range(int(n_series)):
+        s_seed_seq = series_seeds[sid]
+        # The H schedule is drawn from a *separate* per-series RNG so that
+        # the per-segment fGn generation streams (spawned next) are not
+        # consumed by the schedule resampling loop. This keeps the per-segment
+        # streams reproducible regardless of how many resample attempts the
+        # adjacency constraint required.
+        schedule_rng = np.random.default_rng(s_seed_seq)
+        Hs: list[float] | None = None
+        for _attempt in range(D4_MAX_RESAMPLE_ATTEMPTS):
+            candidate = [
+                float(D4_SEGMENT_HURSTS[int(schedule_rng.integers(0, len(D4_SEGMENT_HURSTS)))])
+                for _ in range(D4_N_SEGMENTS)
+            ]
+            gaps = [abs(candidate[k + 1] - candidate[k]) for k in range(D4_N_SEGMENTS - 1)]
+            if all(g >= D4_MIN_ADJACENT_GAP - 1e-12 for g in gaps):
+                Hs = candidate
+                break
+        if Hs is None:
+            raise RuntimeError(
+                f"D4 series {sid}: could not satisfy adjacent-H gap "
+                f">= {D4_MIN_ADJACENT_GAP} within {D4_MAX_RESAMPLE_ATTEMPTS} attempts."
+            )
+
+        # Per-segment fGn streams: spawn 4 deterministic SeedSequences off
+        # the per-series sequence.
+        segment_seeds = s_seed_seq.spawn(D4_N_SEGMENTS)
+        segments: list[np.ndarray] = []
+        # Record the first segment's integer seed for informational ``attrs["seed"]``.
+        first_segment_int_seed: int | None = None
+        for k in range(D4_N_SEGMENTS):
+            seg_rng = np.random.default_rng(segment_seeds[k])
+            seg_int_seed = int(seg_rng.integers(0, 2**31 - 1))
+            if first_segment_int_seed is None:
+                first_segment_int_seed = seg_int_seed
+            prior_state = np.random.get_state()
+            try:
+                np.random.seed(seg_int_seed)
+                gen = FBM(n=D4_SEGMENT_LENGTH, hurst=Hs[k], length=1.0, method="daviesharte")
+                values = np.asarray(gen.fgn(), dtype=float).ravel()
+            finally:
+                np.random.set_state(prior_state)
+            if values.size != D4_SEGMENT_LENGTH:
+                values = values[:D4_SEGMENT_LENGTH]
+            segments.append(values)
+
+        full = np.concatenate(segments)
+        idx = pd.date_range("2020-01-01", periods=total_length, freq="1min")
+        s = pd.Series(full, index=idx, name=f"d4-{sid:04d}")
+        s.attrs["dataset_id"] = "D4"
+        s.attrs["series_id"] = sid
+        s.attrs["seed"] = int(first_segment_int_seed) if first_segment_int_seed is not None else int(seed)
+        s.attrs["true_boundaries"] = true_boundaries.copy()
+        s.attrs["true_Hs"] = np.asarray(Hs, dtype=float)
+        s.attrs["length"] = total_length
         corpus.append(s)
     return corpus

@@ -27,17 +27,18 @@ from hurst_partitioning.baselines import (
 )
 from hurst_partitioning.benchmark import (
     Query,
+    boundary_f1,
     generate_workload,
     measure,
     paired_wilcoxon_with_holm,
 )
 from hurst_partitioning.estimators import HurstEstimate, _dfa2, block_bootstrap_ci
-from hurst_partitioning.io import make_fgn_corpus
+from hurst_partitioning.io import make_fgn_corpus, make_regime_switching_corpus
 from hurst_partitioning.partitioner import Partition
 
 
 def test_package_version_pinned() -> None:
-    assert __version__ == "0.2.0"
+    assert __version__ == "0.2.1"
 
 
 def test_hurst_estimate_dataclass_constructs() -> None:
@@ -184,6 +185,71 @@ def test_measure_counts_touched_chunks_and_bytes() -> None:
     res2 = measure(part, q2, row_byte_size=16)
     assert res2.chunks_touched == 2
     assert res2.bytes_read == (100 + 200) * 16
+
+
+def test_make_regime_switching_corpus_deterministic() -> None:
+    """D4 generator must be deterministic and n_series-invariant for the
+    first k series (Amendment 1)."""
+    a = make_regime_switching_corpus(seed=20260514, n_series=4)
+    b = make_regime_switching_corpus(seed=20260514, n_series=4)
+    assert len(a) == len(b) == 4
+    for sa, sb in zip(a, b):
+        assert np.array_equal(sa.attrs["true_Hs"], sb.attrs["true_Hs"])
+        assert sa.attrs["seed"] == sb.attrs["seed"]
+        assert np.array_equal(sa.values, sb.values)
+        assert sa.attrs["dataset_id"] == "D4"
+        assert len(sa) == 16384
+        assert np.array_equal(
+            sa.attrs["true_boundaries"], np.array([4096, 8192, 12288])
+        )
+        assert isinstance(sa.index, pd.DatetimeIndex)
+    # n_series-invariance: a longer call returns the same first k series.
+    longer = make_regime_switching_corpus(seed=20260514, n_series=12)
+    for i in range(4):
+        assert np.array_equal(a[i].attrs["true_Hs"], longer[i].attrs["true_Hs"])
+        assert a[i].attrs["seed"] == longer[i].attrs["seed"]
+        assert np.array_equal(a[i].values, longer[i].values)
+
+
+def test_make_regime_switching_corpus_adjacent_H_gap() -> None:
+    """Adjacent segments must differ in H by at least 0.15 (Amendment 1)."""
+    corpus = make_regime_switching_corpus(seed=20260514, n_series=16)
+    for s in corpus:
+        Hs = s.attrs["true_Hs"]
+        gaps = np.abs(np.diff(Hs))
+        assert (gaps >= 0.15 - 1e-12).all(), (
+            f"series {s.attrs['series_id']} has Hs={Hs.tolist()} with adjacency "
+            f"gaps {gaps.tolist()}"
+        )
+
+
+def test_boundary_f1_perfect_recovery() -> None:
+    gt = np.array([4096, 8192, 12288])
+    assert boundary_f1(gt, gt, tolerance=50) == 1.0
+
+
+def test_boundary_f1_within_tolerance() -> None:
+    gt = np.array([4096, 8192, 12288])
+    within = np.array([4100, 8200, 12300])  # max |diff| = 12; tol=50 -> all TP
+    assert boundary_f1(within, gt, tolerance=50) == 1.0
+    outside = np.array([5000, 9000, 13000])  # |diff| > 50 each -> all FP, all FN
+    assert boundary_f1(outside, gt, tolerance=50) < 1.0
+    # Each ground-truth boundary may match at most one predicted boundary:
+    # two predictions clustered around one gt should yield TP=1, FP=1.
+    cluster = np.array([4096, 4097])
+    f1 = boundary_f1(cluster, np.array([4096, 9000]), tolerance=50)
+    # tp=1, fp=1, fn=1 -> precision=0.5, recall=0.5, f1=0.5
+    assert abs(f1 - 0.5) < 1e-12
+
+
+def test_boundary_f1_no_predicted_returns_zero() -> None:
+    gt = np.array([4096, 8192, 12288])
+    assert boundary_f1(np.array([], dtype=int), gt, tolerance=50) == 0.0
+
+
+def test_boundary_f1_empty_ground_truth_raises() -> None:
+    with pytest.raises(ValueError):
+        boundary_f1(np.array([4096]), np.array([], dtype=int))
 
 
 def test_paired_wilcoxon_with_holm_table_shape() -> None:

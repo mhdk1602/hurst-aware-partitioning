@@ -395,3 +395,92 @@ def paired_wilcoxon_with_holm(
     return pd.DataFrame(out_rows, columns=[
         "label", "p", "p_holm", "reject", "hl_shift", "hl_ci_low", "hl_ci_high"
     ])
+
+
+# ---------------------------------------------------------------------------
+# Boundary-quality F1 (Amendment 1, M-S6)
+# ---------------------------------------------------------------------------
+
+
+def boundary_f1(
+    predicted: np.ndarray,
+    ground_truth: np.ndarray,
+    tolerance: int = 50,
+) -> float:
+    """F1 score of predicted partition boundaries against ground truth.
+
+    A predicted boundary is a true positive iff it lies within ``tolerance`` rows
+    of some ground-truth boundary. The matching is one-to-one and greedy by
+    nearest-distance: each ground-truth boundary may be matched by at most one
+    predicted boundary. The greedy assignment iterates over all (pred, gt) pairs
+    in ascending distance and assigns the first available pair, then removes both
+    from the pool.
+
+    Parameters
+    ----------
+    predicted : np.ndarray
+        1-D integer array of predicted boundary positions. May be empty.
+    ground_truth : np.ndarray
+        1-D integer array of ground-truth boundary positions. Must be non-empty.
+    tolerance : int
+        Maximum row distance for a predicted boundary to count as a match.
+        Defaults to 50; the v0.2.1 pilot passes
+        ``max(window // 4, 50)`` from the HURST-CI window.
+
+    Returns
+    -------
+    float
+        F1 = 2 * P * R / (P + R). Returns 0.0 if both P and R are 0, or if the
+        predicted array is empty (no positives to score). NaN entries in either
+        input are dropped before scoring.
+
+    Raises
+    ------
+    ValueError
+        If ``ground_truth`` is empty.
+    """
+    pred = np.asarray(predicted, dtype=float).ravel()
+    gt = np.asarray(ground_truth, dtype=float).ravel()
+    # NaN-safe: drop non-finite entries before integer coercion.
+    pred = pred[np.isfinite(pred)]
+    gt = gt[np.isfinite(gt)]
+    if gt.size == 0:
+        raise ValueError("boundary_f1: ground_truth must be non-empty.")
+    pred = pred.astype(np.int64)
+    gt = gt.astype(np.int64)
+    if pred.size == 0:
+        # No predicted boundaries: precision is undefined, recall is 0.
+        # Conventional F1 in change-point detection literature is 0.
+        return 0.0
+
+    tol = int(tolerance)
+    # Build all candidate (pred_idx, gt_idx, distance) triples within tol.
+    # Greedy nearest-match assignment guarantees one-to-one matching.
+    dist = np.abs(pred[:, None] - gt[None, :])
+    pi, gi = np.where(dist <= tol)
+    if pi.size == 0:
+        tp = 0
+    else:
+        candidate_d = dist[pi, gi]
+        order = np.argsort(candidate_d, kind="stable")
+        used_pred = np.zeros(pred.size, dtype=bool)
+        used_gt = np.zeros(gt.size, dtype=bool)
+        tp = 0
+        for idx in order:
+            p = int(pi[idx])
+            g = int(gi[idx])
+            if used_pred[p] or used_gt[g]:
+                continue
+            used_pred[p] = True
+            used_gt[g] = True
+            tp += 1
+
+    fp = int(pred.size) - tp
+    fn = int(gt.size) - tp
+    if tp == 0 and (fp + fn) == 0:
+        return 0.0
+    precision = tp / (tp + fp) if (tp + fp) > 0 else 0.0
+    recall = tp / (tp + fn) if (tp + fn) > 0 else 0.0
+    if precision == 0.0 and recall == 0.0:
+        return 0.0
+    return float(2.0 * precision * recall / (precision + recall))
