@@ -23,10 +23,13 @@ identifiers:
   - type: doi
     value: "10.5281/zenodo.20188014"
     description: "Version DOI for v0.1.0-prereg."
+  - type: doi
+    value: "10.5281/zenodo.20190347"
+    description: "Version DOI for v0.2.1."
 license: MIT
 repository-code: "https://github.com/mhdk1602/hurst-aware-partitioning"
 type: software
-version: "0.1.0-prereg"
+version: "0.2.1"
 date-released: "2026-05-14"
 keywords:
   - "Hurst exponent"
