@@ -1,0 +1,42 @@
+# Planning artifacts (private)
+non-git-files/
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.egg-info/
+dist/
+build/
+.eggs/
+*.egg
+
+# Virtual environments
+.venv/
+venv/
+env/
+
+# Jupyter
+.ipynb_checkpoints/
+
+# Data cache (regenerated on first run from pinned sources)
+data/raw/
+data/cache/
+data/*.parquet
+data/*.feather
+
+# IDE
+.vscode/
+.idea/
+*.swp
+.DS_Store
+
+# Test / coverage
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Local secrets — never commit
+.env
+.env.local
+*.secret

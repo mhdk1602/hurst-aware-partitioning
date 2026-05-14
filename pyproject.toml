@@ -1,0 +1,70 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "hurst-partitioning"
+version = "0.1.0"
+description = "Hurst-aware adaptive partitioning of persistent time series — pre-registration and benchmark scaffolding"
+readme = "README.md"
+requires-python = ">=3.10"
+license = "MIT"
+authors = [
+    { name = "Dineshkumar Malempati Hari", email = "mhdk1602@gmail.com" },
+]
+keywords = ["hurst-exponent", "time-series-database", "adaptive-partitioning", "pre-registration", "fractal-indexing"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Science/Research",
+    "Topic :: Scientific/Engineering :: Mathematics",
+    "Topic :: Database :: Database Engines/Servers",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "License :: OSI Approved :: MIT License",
+]
+
+dependencies = [
+    "numpy>=1.24",
+    "pandas>=2.0",
+    "scipy>=1.10",
+    "matplotlib>=3.7",
+    "statsmodels>=0.14",
+    "nolds>=0.6",
+    "MFDFA>=0.4",
+    "hurst>=0.0.5",
+    "fbm>=0.3",
+    "yfinance>=0.2.37",
+    "pyarrow>=14.0",
+    "tqdm>=4.65",
+    "joblib>=1.3",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.0",
+    "pytest-cov>=4.0",
+    "ruff>=0.3",
+    "pre-commit>=3.0",
+    "jupyter>=1.0",
+    "nbstripout>=0.7",
+]
+wavelets = ["PyWavelets>=1.5"]
+viz = ["plotly>=5.18", "streamlit>=1.31"]
+
+[project.urls]
+Repository = "https://github.com/mhdk1602/hurst-aware-partitioning"
+"Companion paper" = "https://doi.org/10.5281/zenodo.19611543"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/hurst_partitioning"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py310"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "W"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

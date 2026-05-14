@@ -1,0 +1,38 @@
+cff-version: 1.2.0
+message: "If you use this pre-registration or the reproducibility package, please cite the work via the Zenodo concept DOI."
+title: "hurst-aware-partitioning: Pre-registration and reproducibility package for Hurst-aware adaptive partitioning of persistent time series"
+abstract: >-
+  Pre-registration document, reference implementation skeleton, and reproducibility
+  scaffolding for a benchmark study of Hurst-aware adaptive chunk-boundary
+  partitioning against fixed-interval (TimescaleDB-style) and variance-aware
+  (CUSUM) baselines, across the 50-ticker S&P 500 OHLCV corpus (2015-2026), the
+  Numenta Anomaly Benchmark, and a synthetic fractional Gaussian noise corpus
+  with known Hurst exponents. The package archives the registered protocol
+  (hypotheses, datasets, estimators, baselines, falsification criteria, multiple-
+  testing protocol) and the code scaffolding required to execute it. No empirical
+  results on the registered datasets are included in this release.
+authors:
+  - family-names: "Malempati Hari"
+    given-names: "Dineshkumar"
+    orcid: "https://orcid.org/0009-0003-1036-9477"
+    affiliation: "Independent Researcher"
+identifiers:
+  - type: doi
+    value: "PENDING_CONCEPT_DOI"
+    description: "Concept DOI (always resolves to the latest version). Filled in on first Zenodo release."
+license: MIT
+repository-code: "https://github.com/mhdk1602/hurst-aware-partitioning"
+type: software
+version: "0.1.0-prereg"
+date-released: "2026-05-14"
+keywords:
+  - "Hurst exponent"
+  - "detrended fluctuation analysis"
+  - "time series database"
+  - "adaptive partitioning"
+  - "TimescaleDB"
+  - "pre-registration"
+  - "reproducibility"
+  - "long memory"
+  - "regime detection"
+  - "fractal indexing"

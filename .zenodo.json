@@ -1,0 +1,39 @@
+{
+  "title": "hurst-aware-partitioning: Pre-registration and reproducibility package for Hurst-aware adaptive partitioning of persistent time series",
+  "description": "Pre-registration document, reference implementation skeleton, and reproducibility scaffolding for a benchmark study of Hurst-aware adaptive chunk-boundary partitioning against fixed-interval (TimescaleDB-style) and variance-aware (CUSUM) baselines. Datasets: 50-ticker S&P 500 OHLCV (2015-2026), Numenta Anomaly Benchmark, synthetic fGn corpus with known Hurst. Estimators registered: DFA(2), R/S, GHE, wavelet. Primary outcome: bytes read per query under a registered 100-query workload, with paired Wilcoxon and Holm-Bonferroni correction across the hypothesis family. No empirical results on registered datasets are included in this release; the package archives the pre-registered protocol and reference scaffolding only.",
+  "creators": [
+    {
+      "name": "Malempati Hari, Dineshkumar",
+      "orcid": "0009-0003-1036-9477",
+      "affiliation": "Independent Researcher"
+    }
+  ],
+  "keywords": [
+    "Hurst exponent",
+    "detrended fluctuation analysis",
+    "time series database",
+    "adaptive partitioning",
+    "TimescaleDB",
+    "pre-registration",
+    "reproducibility",
+    "long memory",
+    "regime detection",
+    "fractal indexing"
+  ],
+  "license": "MIT",
+  "upload_type": "software",
+  "access_right": "open",
+  "language": "eng",
+  "related_identifiers": [
+    {
+      "identifier": "https://github.com/mhdk1602/hurst-aware-partitioning",
+      "relation": "isSupplementTo",
+      "scheme": "url"
+    },
+    {
+      "identifier": "10.5281/zenodo.19611543",
+      "relation": "isDerivedFrom",
+      "scheme": "doi"
+    }
+  ]
+}
