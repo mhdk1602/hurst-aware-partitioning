@@ -1,0 +1,279 @@
+{
+  "summary": {
+    "version": "0.2.0",
+    "release": "v0.2.0",
+    "dataset": "D3 (synthetic fGn pilot)",
+    "n_persistent_series": 16,
+    "n_comparisons": 4,
+    "n_rejections_after_holm": 2,
+    "median_hl_shift_across_comparisons": 7128.0,
+    "fit_seconds_total": {
+      "hurst-ci": 344.56,
+      "fixed-daily": 0.01,
+      "fixed-monthly": 0.0,
+      "variance-cusum": 0.01,
+      "equal-rows": 0.0
+    },
+    "wall_seconds_total": 446.48
+  },
+  "pilot_settings": {
+    "n_corpus": 1024,
+    "persistent_subsample_per_H": 8,
+    "pilot_series_length": 4096,
+    "hurst_estimator": "dfa",
+    "hurst_window": 500,
+    "hurst_step": 200,
+    "hurst_min_point_gap": 0.1,
+    "hurst_ci_level": 0.95,
+    "hurst_n_bootstrap": 50,
+    "wilcoxon_alpha": 0.05,
+    "hl_bootstrap_replicates": 1000,
+    "row_byte_size": 16,
+    "workload_seed": 20260514,
+    "rng_seed": 20260514,
+    "note": "Pilot deviations vs prereg \u00a75: rolling n_bootstrap reduced from 1000 to 50, step from 20 to 200, series subsampled to length=4096 only. These relax-for-speed choices are pilot-only; the v0.3 full run on D1/D2 uses the registered values."
+  },
+  "workload_sha256": "76b0c6d9a5d3f74be7f660b7b24841dc16deb59c044d0d1c676d9e75573ddbd7",
+  "subsample_series": [
+    {
+      "series_id": 17,
+      "true_H": 0.7,
+      "length": 4096,
+      "seed": 253729875
+    },
+    {
+      "series_id": 19,
+      "true_H": 0.7,
+      "length": 4096,
+      "seed": 557283436
+    },
+    {
+      "series_id": 29,
+      "true_H": 0.7,
+      "length": 4096,
+      "seed": 1874240959
+    },
+    {
+      "series_id": 39,
+      "true_H": 0.7,
+      "length": 4096,
+      "seed": 1530132978
+    },
+    {
+      "series_id": 49,
+      "true_H": 0.7,
+      "length": 4096,
+      "seed": 324852828
+    },
+    {
+      "series_id": 52,
+      "true_H": 0.7,
+      "length": 4096,
+      "seed": 986301409
+    },
+    {
+      "series_id": 63,
+      "true_H": 0.7,
+      "length": 4096,
+      "seed": 640206908
+    },
+    {
+      "series_id": 67,
+      "true_H": 0.7,
+      "length": 4096,
+      "seed": 1318828868
+    },
+    {
+      "series_id": 13,
+      "true_H": 0.85,
+      "length": 4096,
+      "seed": 1179393608
+    },
+    {
+      "series_id": 14,
+      "true_H": 0.85,
+      "length": 4096,
+      "seed": 1352194216
+    },
+    {
+      "series_id": 21,
+      "true_H": 0.85,
+      "length": 4096,
+      "seed": 2037073849
+    },
+    {
+      "series_id": 32,
+      "true_H": 0.85,
+      "length": 4096,
+      "seed": 1867635444
+    },
+    {
+      "series_id": 37,
+      "true_H": 0.85,
+      "length": 4096,
+      "seed": 756062208
+    },
+    {
+      "series_id": 46,
+      "true_H": 0.85,
+      "length": 4096,
+      "seed": 520668816
+    },
+    {
+      "series_id": 81,
+      "true_H": 0.85,
+      "length": 4096,
+      "seed": 788644851
+    },
+    {
+      "series_id": 100,
+      "true_H": 0.85,
+      "length": 4096,
+      "seed": 1041710369
+    }
+  ],
+  "n_boundaries_per_policy": {
+    "hurst-ci": [
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1
+    ],
+    "fixed-daily": [
+      3,
+      3,
+      3,
+      3,
+      3,
+      3,
+      3,
+      3,
+      3,
+      3,
+      3,
+      3,
+      3,
+      3,
+      3,
+      3
+    ],
+    "fixed-monthly": [
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1
+    ],
+    "variance-cusum": [
+      39,
+      21,
+      25,
+      30,
+      22,
+      23,
+      24,
+      20,
+      15,
+      23,
+      24,
+      27,
+      23,
+      17,
+      16,
+      21
+    ],
+    "equal-rows": [
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1
+    ]
+  },
+  "wilcoxon_holm_table": [
+    {
+      "label": "D3-persistent \u00d7 fixed-daily \u00d7 dfa",
+      "p": 2.220526575292566e-69,
+      "p_holm": 6.661579725877698e-69,
+      "reject": true,
+      "hl_shift": 14256.0,
+      "hl_ci_low": 13984.0,
+      "hl_ci_high": 14832.0
+    },
+    {
+      "label": "D3-persistent \u00d7 fixed-monthly \u00d7 dfa",
+      "p": 1.0,
+      "p_holm": 1.0,
+      "reject": false,
+      "hl_shift": 0.0,
+      "hl_ci_low": 0.0,
+      "hl_ci_high": 0.0
+    },
+    {
+      "label": "D3-persistent \u00d7 variance-cusum \u00d7 dfa",
+      "p": 1.2065601204769778e-235,
+      "p_holm": 4.826240481907911e-235,
+      "reject": true,
+      "hl_shift": 26184.0,
+      "hl_ci_low": 25256.0,
+      "hl_ci_high": 27072.2
+    },
+    {
+      "label": "D3-persistent \u00d7 equal-rows \u00d7 dfa",
+      "p": 1.0,
+      "p_holm": 1.0,
+      "reject": false,
+      "hl_shift": 0.0,
+      "hl_ci_low": 0.0,
+      "hl_ci_high": 0.0
+    }
+  ],
+  "per_policy_total_bytes": {
+    "hurst-ci": 54901504,
+    "fixed-daily": 32790272,
+    "fixed-monthly": 54901504,
+    "variance-cusum": 12808640,
+    "equal-rows": 54901504
+  },
+  "per_policy_mean_bytes_per_query": {
+    "hurst-ci": 34313.44,
+    "fixed-daily": 20493.92,
+    "fixed-monthly": 34313.44,
+    "variance-cusum": 8005.4,
+    "equal-rows": 34313.44
+  }
+}

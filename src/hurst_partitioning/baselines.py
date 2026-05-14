@@ -45,7 +45,18 @@ class FixedMonthlyPartitioner(Partitioner):
 
 
 class VarianceCusumPartitioner(Partitioner):
-    """B3. CUSUM change-point detection on |returns|.
+    """B3. CUSUM change-point detection on |first differences|.
+
+    Implements Page (1954) recursive CUSUM on standardized |returns|:
+
+        diffs = |x[t+1] - x[t]|
+        z[t]  = (diffs[t] - mean(diffs)) / std(diffs)
+        S[t]  = max(0, S[t-1] + z[t] - k)
+        if S[t] > h:  boundary at t,  reset S[t] = 0
+
+    A boundary fires when the cumulative standardized positive drift exceeds
+    ``h``; the accumulator is reset on each fire. The drift parameter ``k``
+    is the conventional 0.5 (half a standard deviation of slack).
 
     The CUSUM threshold ``h`` is the only tunable parameter in the registered
     family. It MUST be tuned on D3-train (synthetic, half-by-parity); never
@@ -54,11 +65,56 @@ class VarianceCusumPartitioner(Partitioner):
 
     name = "variance-cusum"
 
-    def __init__(self, h: float = 5.0) -> None:
+    def __init__(self, h: float = 5.0, k: float = 0.5) -> None:
         self.h = h
+        self.k = k
 
     def fit(self, series: pd.Series) -> Partition:
-        raise NotImplementedError("VarianceCusumPartitioner unimplemented in v0.1.0-prereg.")
+        values = np.asarray(series.values, dtype=float).ravel()
+        n = values.size
+        if n < 3:
+            return Partition(
+                boundaries=np.asarray([0], dtype=np.int64),
+                metadata={"policy": self.name, "h": self.h, "k": self.k},
+            )
+        diffs = np.abs(np.diff(values))
+        mu = float(diffs.mean())
+        sigma = float(diffs.std())
+        if not np.isfinite(sigma) or sigma <= 1e-12:
+            # Degenerate (constant) series: no boundaries.
+            return Partition(
+                boundaries=np.asarray([0], dtype=np.int64),
+                metadata={
+                    "policy": self.name,
+                    "h": self.h,
+                    "k": self.k,
+                    "note": "degenerate-zero-variance",
+                },
+            )
+        z = (diffs - mu) / sigma
+
+        boundaries: list[int] = [0]
+        S = 0.0
+        for t in range(z.size):
+            S = max(0.0, S + z[t] - self.k)
+            if S > self.h:
+                # diffs[t] corresponds to the increment from index t to t+1
+                # in the original series. The boundary lands at t+1.
+                pos = t + 1
+                if pos > boundaries[-1]:
+                    boundaries.append(pos)
+                S = 0.0
+
+        return Partition(
+            boundaries=np.asarray(boundaries, dtype=np.int64),
+            metadata={
+                "policy": self.name,
+                "h": self.h,
+                "k": self.k,
+                "mu_abs_diff": mu,
+                "sigma_abs_diff": sigma,
+            },
+        )
 
 
 class EqualRowsPartitioner(Partitioner):

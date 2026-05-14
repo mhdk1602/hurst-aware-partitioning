@@ -45,32 +45,80 @@ class Estimator(Protocol):
 
 
 def _dfa2(series: np.ndarray) -> float:
-    """DFA(2) point estimate. Implementation deferred to nolds in execution.
+    """DFA(2) point estimate via ``nolds.dfa`` with ``order=2``.
 
-    The protocol requires nolds.dfa with order=2; the wrapper here is a
-    placeholder that raises in the scaffold release so callers cannot
-    accidentally treat the scaffold as a working analysis pipeline.
+    Per prereg §5, DFA(2) is the primary estimator. We delegate to nolds
+    which implements the standard Peng et al. detrended-fluctuation
+    procedure; the order=2 argument fits a quadratic to each segment
+    before computing the residual variance.
     """
-    raise NotImplementedError(
-        "DFA(2) point estimate is unimplemented in the v0.1.0-prereg scaffold. "
-        "Implementation will land at v0.2.0 along with the D3 pilot. See "
-        "prereg/h2-prereg-v1.md §5 for the registered specification."
-    )
+    import nolds
+
+    arr = np.asarray(series, dtype=float).ravel()
+    if arr.size < 8:
+        raise ValueError(f"DFA(2) needs at least 8 points; got {arr.size}")
+    return float(nolds.dfa(arr, order=2))
 
 
 def _rs(series: np.ndarray) -> float:
-    """Rescaled-range estimate. Same scaffold contract as _dfa2."""
-    raise NotImplementedError("R/S point estimate is unimplemented in v0.1.0-prereg.")
+    """Rescaled-range estimate via the ``hurst`` package.
+
+    Uses ``kind='change'`` and ``simplified=True`` per spec, which treats
+    the input as the increments and returns the slope of log(R/S) on log n.
+    Returns only the Hurst exponent (the package returns a tuple).
+    """
+    import hurst as hurst_lib
+
+    arr = np.asarray(series, dtype=float).ravel()
+    if arr.size < 100:
+        # The hurst library asks for at least ~100 points; below that the
+        # estimator is unreliable. We raise to make this loud rather than
+        # silently returning a near-meaningless number.
+        raise ValueError(f"R/S needs at least 100 points; got {arr.size}")
+    H, _c, _data = hurst_lib.compute_Hc(arr, kind="change", simplified=True)
+    return float(H)
 
 
 def _ghe(series: np.ndarray, q: float = 2.0) -> float:
-    """Generalized Hurst exponent at order q. Same scaffold contract."""
-    raise NotImplementedError("GHE point estimate is unimplemented in v0.1.0-prereg.")
+    """Generalized Hurst exponent at order ``q`` via MFDFA.
+
+    Per prereg §5 (robustness battery), we use MFDFA at the requested
+    order ``q``. MFDFA integrates the series internally (treats input as
+    increments) and reports the scaling exponent h(q); for q=2, h(2) is
+    the Hurst exponent. Lags are log-spaced from 8 to N/4.
+    """
+    from MFDFA import MFDFA
+
+    arr = np.asarray(series, dtype=float).ravel()
+    n = arr.size
+    if n < 64:
+        raise ValueError(f"GHE needs at least 64 points; got {n}")
+    max_lag = max(8, n // 4)
+    lags = np.unique(np.logspace(np.log10(8), np.log10(max_lag), num=20).astype(int))
+    lags = lags[lags >= 4]
+    if lags.size < 4:
+        raise ValueError("Not enough valid lags for GHE.")
+    _lag_out, dfa = MFDFA(arr, lag=lags, q=q, order=1)
+    valid = dfa[:, 0] > 0
+    if valid.sum() < 4:
+        raise ValueError("MFDFA returned too few positive fluctuations to fit.")
+    slope, _intercept = np.polyfit(
+        np.log(_lag_out[valid]), np.log(dfa[valid, 0]), 1
+    )
+    return float(slope)
 
 
 def _wavelet(series: np.ndarray) -> float:
-    """Wavelet (Daubechies db4, level 6) Hurst estimate. Same scaffold contract."""
-    raise NotImplementedError("Wavelet point estimate is unimplemented in v0.1.0-prereg.")
+    """Wavelet (Daubechies db4, level 6) Hurst estimate.
+
+    Per prereg §5, this is informational only. Implementation is deferred
+    to v0.2.1+ pending PyWavelets being part of the install.
+    """
+    raise NotImplementedError(
+        "Wavelet estimator is deferred to a later release. "
+        "It is informational per prereg/h2-prereg-v1.md §5 and does not "
+        "load-bear on the primary or robustness comparisons."
+    )
 
 
 def block_bootstrap_ci(
@@ -102,16 +150,58 @@ def block_bootstrap_ci(
     Returns
     -------
     (ci_low, ci_high) : tuple[float, float]
-        Empirical quantiles of the bootstrap distribution.
-
-    Notes
-    -----
-    Unimplemented in the v0.1.0-prereg scaffold. See estimators._dfa2 docstring.
+        Empirical quantiles of the bootstrap distribution at
+        (1 - level) / 2 and 1 - (1 - level) / 2.
     """
-    raise NotImplementedError(
-        "block_bootstrap_ci is unimplemented in v0.1.0-prereg. "
-        "The pre-registration fixes the contract; the implementation lands at v0.2.0."
-    )
+    arr = np.asarray(series, dtype=float).ravel()
+    n = arr.size
+    if n < 4:
+        raise ValueError(f"block_bootstrap_ci needs at least 4 points; got {n}")
+    if block_length is None:
+        block_length = max(1, int(round(n ** (1 / 3))))
+    p = 1.0 / float(block_length)
+    if rng is None:
+        rng = np.random.default_rng()
+
+    estimates = np.empty(n_bootstrap, dtype=float)
+    n_kept = 0
+    for b in range(n_bootstrap):
+        # Politis-Romano stationary bootstrap: at each step, with probability
+        # p start a new block at a fresh uniform index; otherwise continue
+        # the current block by one position (mod n).
+        idx = np.empty(n, dtype=np.int64)
+        cur = int(rng.integers(0, n))
+        idx[0] = cur
+        if n > 1:
+            new_block = rng.random(n - 1) < p
+            jumps = rng.integers(0, n, size=n - 1)
+            for i in range(1, n):
+                if new_block[i - 1]:
+                    cur = int(jumps[i - 1])
+                else:
+                    cur = (cur + 1) % n
+                idx[i] = cur
+        sample = arr[idx]
+        try:
+            est = float(estimator_fn(sample))
+        except Exception:
+            # Bootstrap resamples can hit edge cases; skip failures rather
+            # than failing the whole CI. We rebalance n_bootstrap downward.
+            continue
+        if not np.isfinite(est):
+            continue
+        estimates[n_kept] = est
+        n_kept += 1
+
+    if n_kept < max(10, n_bootstrap // 10):
+        raise RuntimeError(
+            f"Bootstrap CI failed: only {n_kept}/{n_bootstrap} replicates returned a finite estimate."
+        )
+    kept = estimates[:n_kept]
+    alpha = 1.0 - level
+    lo = float(np.quantile(kept, alpha / 2.0))
+    hi = float(np.quantile(kept, 1.0 - alpha / 2.0))
+    return lo, hi
 
 
 def estimate(
