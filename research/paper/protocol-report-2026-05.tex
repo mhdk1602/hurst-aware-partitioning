@@ -1,0 +1,283 @@
+\documentclass[11pt]{article}
+
+\usepackage[utf8]{inputenc}
+\usepackage{amsmath, amssymb, booktabs, hyperref, url}
+\usepackage{xcolor}
+\usepackage[margin=1in]{geometry}
+
+\hypersetup{
+  colorlinks=true,
+  linkcolor=blue!50!black,
+  citecolor=blue!50!black,
+  urlcolor=blue!50!black
+}
+
+\title{Hurst-Aware Adaptive Partitioning of Persistent Time Series:\\
+A Pre-Registered Protocol with Synthetic-Pilot Validation\\
+and a Boundary-Quality Methodology Amendment}
+
+\author{Dineshkumar Malempati Hari\\
+  Independent Researcher\\
+  ORCID: 0009-0003-1036-9477\\
+  \texttt{mhdk.dinesh@gmail.com}}
+
+\date{14 May 2026}
+
+\begin{document}
+
+\maketitle
+
+\begin{abstract}
+This is a working-paper protocol report, not the empirical paper. I describe a pre-registered benchmark (Zenodo DOI 10.5281/zenodo.20188014, concept DOI 10.5281/zenodo.20188013) that tests whether drawing time-series chunk boundaries at statistically detected regime breaks in the rolling Hurst exponent reduces bytes read per query against the fixed-interval defaults used in TimescaleDB, QuestDB, and InfluxDB. The protocol fixes hypotheses, datasets (S\&P 500 50-ticker OHLCV, the Numenta Anomaly Benchmark, and a synthetic fractional Gaussian noise corpus), an estimator battery (DFA(2), R/S, GHE, wavelet), five baselines, a 100-query workload, and a 48-comparison Holm--Bonferroni-corrected family with explicit falsification criteria. I report a small synthetic pilot on the fGn corpus that validates the I/O accounting harness and surfaces a methodology vulnerability: the primary outcome (bytes-read normalized to FIXED-DAILY) rewards aggressive subdivision on noise. The variance-aware CUSUM baseline wins on the pilot for exactly this reason, even though no within-series regime breaks exist. I then describe Amendment~1, which adds a boundary-quality secondary outcome (F1 against ground-truth breaks on a new regime-switching synthetic corpus) without altering the primary outcome or the falsification rule. The empirical run on the registered datasets is gated on a v1.0 lock and will be reported separately.
+\end{abstract}
+
+\section{Introduction}
+
+Production time-series databases such as TimescaleDB, QuestDB, and InfluxDB partition data into chunks on fixed time or row intervals. The partitioning decision is statistical-structure-agnostic: a chunk boundary at midnight does not know whether midnight falls inside a coherent regime or between two of them. For series with short memory this is fine. For series with long-range dependence (Hurst exponent $H>0.5$), adjacent intervals carry correlated information, and a fixed boundary can fragment a coherent regime across two chunks. Every query that intersects the boundary then pays the I/O cost of reading both.
+
+The pre-registered hypothesis (paraphrased from prereg~\S3) is that on streaming univariate time series whose rolling Hurst exceeds 0.6 over at least 30\% of the series, a partitioning policy that draws chunk boundaries at statistically detected regime breaks in the rolling Hurst estimate reduces total bytes read per query against fixed-daily partitioning by 20--40\%, with a 95\% confidence interval on the Hodges--Lehmann shift estimator strictly above zero.
+
+This document is not the empirical paper. It is a registered protocol report. The empirical run on the S\&P 500 corpus and the Numenta Anomaly Benchmark is gated on a v1.0 protocol lock in August 2026 and will be reported once the 48 paired comparisons land in a single batch. What I report here is: (i) the registered protocol, (ii) a synthetic pilot on a 16-series fractional Gaussian noise subsample that validates the harness and identifies a methodological problem, and (iii) Amendment~1 to the protocol, which adds a boundary-quality secondary outcome and is itself pre-registered before any D1 or D2 analysis. The artifact aims at the credibility-strengthening role increasingly played by pre-empirical reports on arXiv: declare the protocol, surface what the pilot found, archive both publicly.
+
+I write this paper alone. The companion infrastructure on Hurst estimation originates from earlier work on volatility--volume fractal coupling~\cite{malempatihari2026fractal}.
+
+\section{Background and Related Work}
+
+\subsection{Hurst estimation}
+
+Detrended Fluctuation Analysis (DFA) was introduced by Peng et al.~\cite{peng1994dfa} for DNA-sequence long-range correlations and quickly became standard for any series where stationarity is doubtful. The variant DFA(2), which detrends with a quadratic polynomial inside each window, is the primary estimator here. R/S (rescaled range) is Hurst's original 1951 estimator and remains a useful robustness check. The generalized Hurst exponent at $q=2$ is a moment-based estimator from the multifractal family~\cite{kantelhardt2002mfdfa}. Wavelet estimation (Daubechies db4, level 6) is reported but flagged as informational because of known finite-sample bias on short windows.
+
+Block-bootstrap confidence intervals on each estimate follow Politis and Romano~\cite{politisromano1994}, with 1000 resampling iterations and block length $\lfloor W^{1/3}\rfloor$. Partitioning decisions use the CI, not the point estimate. This matters: a partitioner that fires on point-estimate differences alone is much noisier than one that requires non-overlapping CIs.
+
+\subsection{Change-point detection}
+
+The closest classical literature is on structural breaks in time-series regressions. Bai and Perron~\cite{baiperron1998} formalized testing for multiple breakpoints in linear models, including the Type-I error problem of falsely flagging breaks in noisy series. Killick et al.~\cite{killick2012pelt} introduced PELT (Pruned Exact Linear Time), an exact dynamic-programming algorithm for change-point detection with a penalized cost function. Both literatures have explicit machinery for distinguishing real boundaries from false fires. Storage-layer adaptive chunking has not, to my reading, adopted this framing. Section~\ref{sec:amendment} returns to this point.
+
+\subsection{Storage-layer chunking}
+
+Time-series databases ship with fixed-interval chunking as the default. TimescaleDB partitions hypertables on a time dimension with a configurable chunk interval (one day for daily data is canonical). QuestDB and InfluxDB use analogous time-based partitioning. None of these systems, to my knowledge, expose a regime-aware chunking policy. The closest production-system work is on adaptive sampling and downsampling, which is orthogonal to where chunk boundaries land.
+
+\subsection{Adjacent algorithmic work}
+
+Zhang et al.~\cite{zhang2023partitioning} study optimal sequence partitioning for Hurst estimation itself: how should one cut a series into segments so that estimation variance is minimized? Their target is the estimator, not the storage layout. Cerqueti et al.~\cite{cerqueti2022fuzzy} cluster series with time-varying memory using a fuzzy approach. Neither paper makes a storage-layer claim. The gap I~am trying to fill is narrower than either: does a regime-aware boundary placement, evaluated against the deployed databases' fixed-interval defaults, win on bytes-read?
+
+\subsection{Selectivity estimation and learned indexes}
+
+The selectivity-estimation lineage in fractal dimensions begins with Faloutsos and Kamel~\cite{faloutsoskamel1994} on the fractal dimension of spatial data and Belussi and Faloutsos~\cite{belussifaloutsos1995} on box-counting estimators for query selectivity. Learned indexes~\cite{kraska2018learnedindex} brought ML-driven index structures into mainstream database research, and recent surveys (2024--2026) extend the framing. The connection to this paper is indirect: H1 in my wider research program asks whether a learned-fractal hybrid can replace traditional indexes for OLAP. H2 is the prior step. If regime structure is even visible at the storage layer, learned-index work has something to learn from; if not, the H1 plan needs revision.
+
+\subsection{What I am not doing}
+
+The Hub Highway Hypothesis on multifractal ANN indexes belongs to H3 in my research program, not H2. I~mention it because reviewers familiar with my preprint history may expect it; I~am keeping it out of scope here.
+
+\section{Registered Protocol}
+
+The full protocol is in \texttt{prereg/h2-prereg-v1.md} on Zenodo (DOI 10.5281/zenodo.20188014, version-specific; concept DOI 10.5281/zenodo.20188013). I~summarize it here for the record.
+
+\subsection{Hypotheses}
+
+\paragraph{H2-P (primary).} A partitioner that places chunk boundaries at statistically detected breaks in the rolling Hurst estimate produces fewer bytes read per query on the registered workload than a FIXED-DAILY baseline, on persistent series. The Hodges--Lehmann shift on bytes-read is positive with a 95\% bootstrap CI strictly above zero. Predicted effect: 20--40\% mean reduction.
+
+\paragraph{H2-S1.} The primary win replicates against VARIANCE-CUSUM, the adaptive competitor that fires on changes in $|r_t|$. Predicted reduction: 10--25\%.
+
+\paragraph{H2-S2 (anti-persistent control).} On D3 series with $H<0.5$, the Hurst-aware policy does \emph{not} beat FIXED-DAILY. A win here would be artifactual and would falsify the primary claim.
+
+\paragraph{H2-S3 (estimator robustness).} Conclusions hold across DFA(2), R/S, and GHE at $q=2$. The wavelet estimator is informational.
+
+\subsection{Datasets}
+
+\textbf{D1} is 50 S\&P 500 tickers spanning all 11 GICS sectors, daily OHLCV from 2015-01-02 through 2026-04-30, sourced via \texttt{yfinance $\geq$ 0.2.37}. \textbf{D2} is 10 Numenta Anomaly Benchmark series from \texttt{realKnownCause/} and \texttt{realTraffic/}, pinned at a specific NAB commit. \textbf{D3} is a synthetic fractional Gaussian noise corpus of 1024 series, lengths $\in\{4096, 16384, 65536\}$ and $H\in\{0.30, 0.50, 0.70, 0.85\}$, generated with seed \texttt{20260514}. D3 serves the anti-persistent control and the variance-CUSUM tuning split.
+
+\subsection{Estimator battery}
+
+DFA(2) is primary. Windows $W\in\{250, 500, 1000\}$ with step 20. R/S and GHE share the same windowing. Wavelet is reported separately. Every estimate carries a 95\% block-bootstrap CI at 1000 iterations.
+
+\subsection{Baselines}
+
+\textbf{B1 FIXED-DAILY} (TimescaleDB default), \textbf{B2 FIXED-MONTHLY}, \textbf{B3 VARIANCE-CUSUM} on $|r_t|$ with sensitivity tuned on D3-train, \textbf{B4 EQUAL-ROWS} at 10{,}000 rows, \textbf{B5 ORACLE} on D3 only (true regime points, upper bound, not part of the primary comparison). The candidate policy is \textbf{HURST-CI}: a boundary fires when the rolling Hurst CI on window $t$ does not overlap the CI on window $t-1$ \emph{and} the point estimates differ by at least 0.1.
+
+\subsection{Workload}
+
+100 queries per dataset: 40 time-range scans (bias toward 30, 90, 365-day windows), 30 aggregate-over-range (mean, std, p95, max), 20 windowed-regression on a 60-day window, 10 anomaly-detection range plus threshold. Generated once on D3, archived to \texttt{experiments/query-library-v1.json}, hashed with SHA-256, lifted unchanged to D1 and D2 by date-range alignment. The partitioner has no read access to the workload at partition time.
+
+\subsection{Primary outcome and statistical test}
+
+\textbf{M-PRIMARY}: total bytes read from storage per query, averaged across the 100-query workload, normalized to FIXED-DAILY. A byte read is counted at the chunk level (any chunk overlapping the query counts its full byte size, so the metric penalizes large chunks straddling query boundaries). For each dataset-baseline pair, the 100 paired per-query observations are tested with a paired Wilcoxon signed-rank test. Effect size is the Hodges--Lehmann shift with 95\% block-bootstrap CI.
+
+\subsection{Multiple testing}
+
+The registered family is 48 comparisons: 3 datasets (D1, D2, D3-persistent) $\times$ 4 baselines (B1--B4) $\times$ 4 estimators (DFA, R/S, GHE, wavelet). Holm--Bonferroni is applied at family-wise $\alpha=0.05$. The ranking is pre-registered with D1$\times$B1$\times$DFA at rank 1. Amendment~1 extends the family to 52 (\S\ref{sec:amendment}).
+
+\subsection{Falsification}
+
+Per prereg~\S12, H2-P is rejected if all three hold: (i) on D1, the Hurst-aware policy shows $<10\%$ I/O reduction versus FIXED-DAILY or the 95\% CI on the Hodges--Lehmann shift crosses zero; (ii) the same holds on D2; (iii) H2-S2 fires (the policy wins where it should not). Any one of the three is a concern. All three jointly constitute rejection.
+
+\subsection{Stopping rules and deviations}
+
+All 48 comparisons are computed in a single batch in one run of \texttt{replicate.py} before any results are inspected. The VARIANCE-CUSUM sensitivity is the only parameter tuned on data, and it is tuned on D3-train only, before D1 or D2 are touched. Any analytic decision outside the registered protocol is logged in \texttt{prereg/deviations-log.md} as exploratory.
+
+\section{Synthetic-Pilot Validation on D3}
+\label{sec:pilot}
+
+I~ran a small pilot on D3 to validate the I/O accounting harness end-to-end. This is \emph{not} a hypothesis test. There are no within-series regime breaks in constant-$H$ fGn by construction, so HURST-CI should produce a single chunk and any partitioner that subdivides without recovering real boundaries is partitioning noise.
+
+\subsection{Pilot configuration}
+
+Sixteen persistent series, length 4096, drawn from the D3 corpus: eight with $H=0.70$ and eight with $H=0.85$. The pilot relaxes three protocol parameters for speed: bootstrap iterations dropped from 1000 to 50, rolling-Hurst step from 20 to 200, and series length restricted to 4096. These are pilot-only choices; the v0.3 run uses the registered values. Seeds (workload and RNG) are 20260514. The workload library hashes to \texttt{76b0c6d9\ldots73ddbd7}, matching the registered v1 artifact.
+
+\subsection{Pilot results}
+
+Table~\ref{tab:pilot} reports the four paired Wilcoxon outcomes with Holm-adjusted $p$-values and Hodges--Lehmann shift CIs. Boundary counts per policy are summarized in Table~\ref{tab:boundaries}.
+
+\begin{table}[ht]
+\centering
+\small
+\begin{tabular}{lrrrr}
+\toprule
+Comparison & HL shift (bytes/q) & 95\% CI & $p_{\mathrm{Holm}}$ & Reject? \\
+\midrule
+D3-persistent $\times$ FIXED-DAILY $\times$ DFA   & $+14{,}256$ & $[13{,}984,\ 14{,}832]$  & $6.7\!\times\!10^{-69}$  & yes \\
+D3-persistent $\times$ FIXED-MONTHLY $\times$ DFA & $0$          & $[0,\ 0]$                  & $1.0$                    & no  \\
+D3-persistent $\times$ VARIANCE-CUSUM $\times$ DFA & $+26{,}184$ & $[25{,}256,\ 27{,}072]$  & $4.8\!\times\!10^{-235}$ & yes \\
+D3-persistent $\times$ EQUAL-ROWS $\times$ DFA    & $0$          & $[0,\ 0]$                  & $1.0$                    & no  \\
+\bottomrule
+\end{tabular}
+\caption{D3 pilot: paired Wilcoxon outcomes on per-query bytes read, 16 series of length 4096, 100 queries each. Positive HL shift means the baseline reads \emph{more} bytes than HURST-CI.}
+\label{tab:pilot}
+\end{table}
+
+\begin{table}[ht]
+\centering
+\small
+\begin{tabular}{lrrr}
+\toprule
+Policy & min boundaries & max boundaries & mean boundaries \\
+\midrule
+HURST-CI       & 1  & 1   & 1.0 \\
+FIXED-DAILY    & 3  & 3   & 3.0 \\
+FIXED-MONTHLY  & 1  & 1   & 1.0 \\
+VARIANCE-CUSUM & 15 & 39  & 23.1 \\
+EQUAL-ROWS     & 1  & 1   & 1.0 \\
+\bottomrule
+\end{tabular}
+\caption{Boundary counts per series on the D3 pilot, across the 16 persistent series.}
+\label{tab:boundaries}
+\end{table}
+
+\subsection{What this tells me, and what it does not}
+
+Three things to note.
+
+First, HURST-CI fires zero times. That is the correct behavior on constant-$H$ fGn (the CI test was designed to be conservative), and it validates the policy as not gratuitously chopping persistent series.
+
+Second, VARIANCE-CUSUM fires liberally on Gaussian noise: a mean of 23 boundaries per 4096-row series, sometimes 39. Each of those chunks is small. By the bytes-read accounting rule, where any chunk overlapping a query counts its full size, smaller chunks read fewer total bytes per query \emph{regardless of whether the boundaries are meaningful}. CUSUM therefore wins on the pilot by HL shift +26{,}184 bytes/query at $p_{\mathrm{Holm}}\approx 5\times10^{-235}$. The win is real, the test is correct, and the interpretation is that this metric on this dataset is recovering something other than regime quality.
+
+Third, the FIXED-DAILY result (HL shift $+14{,}256$, $p_{\mathrm{Holm}}\approx 7\times 10^{-69}$, ``reject'') is in the \emph{opposite} direction from what H2-P will eventually want on D1: here, HURST-CI reads more bytes than FIXED-DAILY because HURST-CI emits a single chunk that overlaps every query. On constant-$H$ synthetic data this is expected. On D1 with real regime breaks, the prediction is reversed.
+
+I~want to be honest about what this pilot proves: the harness loads data, fits partitioners, runs the workload, accounts bytes correctly, runs paired Wilcoxon with Holm correction, and bootstraps Hodges--Lehmann CIs. That is the entire claim. It is a code-correctness pass. The H2-P hypothesis remains open. The first test of H2-P is on D1 in 2026-08.
+
+\section{Methodology Refinement: A Boundary-Quality Secondary Outcome}
+\label{sec:amendment}
+
+The pilot surfaced a problem worth naming. M-PRIMARY (bytes-read normalized to FIXED-DAILY) is partitioner-agnostic: it does not ask whether a partitioner's boundaries are real, only whether the resulting chunks are small enough to win on I/O. A partitioner that subdivides liberally on noise can therefore beat a partitioner whose boundaries are real but few. On D3 this is fine, because there is no ground truth to recover; on D1 and D2, where there \emph{are} real regime breaks, the metric still cannot distinguish between ``the boundaries are real and small chunks pay off'' and ``the partitioner shreds noise and the metric happens to reward it.''
+
+Change-point detection has handled this problem for two decades. Bai and Perron~\cite{baiperron1998} are explicit about Type-I errors in break detection. Killick et al.~\cite{killick2012pelt} use a penalty term to discourage spurious boundaries. Storage-layer adaptive chunking has, as far as I~can tell, not adopted the same discipline. I~think it should.
+
+Amendment~1 (Zenodo update on concept DOI 10.5281/zenodo.20188013, archived 2026-05-14 before any D1 or D2 analysis) adds one secondary outcome metric and one secondary hypothesis. It does not change M-PRIMARY or the falsification rule.
+
+\paragraph{New metric M-S6 (Boundary Quality Score).} F1 of predicted partitioner boundaries against ground-truth regime breaks. A predicted boundary counts as a true positive if it lies within $\mathrm{tol} = \max(W/4,\,50)$ rows of a ground-truth break. M-S6 is per-series, reported as a mean with 95\% block-bootstrap CI per dataset $\times$ partitioner.
+
+\paragraph{New dataset D4 (regime-switching fGn).} 256 series, each formed by concatenating four segments of length 4096. Each segment's $H$ is drawn from $\{0.30, 0.55, 0.70, 0.85\}$ with adjacent segments forced to differ by at least 0.15. Three ground-truth boundaries per series at positions 4096, 8192, 12288. Seed 20260514, deterministic per-series via \texttt{SeedSequence.spawn}.
+
+\paragraph{New hypothesis H2-S4.} On D4, HURST-CI has strictly higher mean M-S6 than each of B1--B4. Predicted F1 thresholds: HURST-CI $\geq 0.5$, each baseline $\leq 0.3$. Disconfirmation rule: HURST-CI falls below 0.5 \emph{or} any baseline exceeds 0.4.
+
+The amendment adds four comparisons (D4 $\times$ B1--B4 $\times$ DFA), extending the multiple-testing family from 48 to 52. Holm--Bonferroni is reapplied at the family level at $\alpha=0.05$.
+
+\paragraph{Why this is transferable.} The point of M-S6 is not Hurst-specific. Any adaptive partitioning study (regime-aware, variance-aware, or learned) faces the same vulnerability: bytes-read alone cannot adjudicate between a partitioner that recovers true structure and one that shreds noise into convenient-sized blocks. M-S6 is a generic operationalization of boundary quality given a ground-truth corpus, and the same idea (predicted-vs-ground-truth F1 with a tolerance rule) generalizes to any partitioning policy that reports candidate boundaries. I~think this is the more durable contribution of the amendment, separate from whether HURST-CI clears its threshold on D4.
+
+\section{Reproducibility}
+
+Code: \url{https://github.com/mhdk1602/hurst-aware-partitioning}, MIT license. Tagged \texttt{v0.1.0-prereg} (registered protocol) and \texttt{v0.2.0} (pilot). Pre-registration archived on Zenodo (concept DOI \href{https://doi.org/10.5281/zenodo.20188013}{10.5281/zenodo.20188013}, version DOI \href{https://doi.org/10.5281/zenodo.20188014}{10.5281/zenodo.20188014}). All seeds pinned at \texttt{20260514}. The query library hashes to a SHA-256 in \texttt{experiments/query-library-v1.json.sha256}; reproductions can verify they have the same workload. Test coverage is on the scaffolding only; no D1 or D2 analyses have been performed prior to this writing.
+
+\section{Open Questions and Roadmap}
+
+\subsection{What I expect on D1 and D2}
+
+On D1, the S\&P 500 universe, I~expect heterogeneous persistence: utility and consumer-staple tickers tend to show steadier autocorrelation structure than mega-cap tech, and intraday-volatile names show sharper regime transitions around earnings windows and macro shocks. If HURST-CI works, the win should be concentrated in tickers where rolling Hurst is high (above 0.6) for more than 30\% of the series. If the win is uniform across the 50 tickers, I~will be suspicious; uniform wins on a heterogeneous corpus are unusual.
+
+On D2, the Numenta Anomaly Benchmark, I~expect industrial-sensor noise with rare but real regime changes (machine state transitions in the \texttt{realTraffic} subset, anomaly-triggered shifts in \texttt{realKnownCause}). The within-series sample sizes are smaller than D1, so block-bootstrap CIs will be wider and HURST-CI will fire less often. A null result on D2 with a clean win on D1 would be informative.
+
+\subsection{Threats to validity}
+
+Three I~am tracking. \emph{Estimator instability under non-stationarity}: DFA(2) assumes that the local windowed series is approximately stationary; if it is not, the rolling Hurst is biased in a window-length-dependent way. The sensitivity analysis across $W\in\{250,500,1000\}$ (M-S5) is the main hedge. \emph{Finite-sample bias on short windows}: for $W=250$, bias is non-trivial; I~report results across all three $W$ values, not just the one that wins. \emph{Workload representativeness}: the 40/30/20/10 query split is reasonable for the OLAP-style use case but does not cover write-heavy ingestion, ad-hoc joins, or cross-series aggregations. The paper's limitations section will be explicit about this.
+
+\subsection{Relationship to learned indexes}
+
+H2 is the prior step for H1 in my research program, which asks whether a learned-fractal hybrid can replace conventional indexes for OLAP. If regime structure does not survive at the storage layer (H2 falsified), the H1 plan needs revision because the same statistical signal would not be there to learn from. If H2 confirms, the implication for H1 is that fractal structure in the data is exploitable not just by classical Hurst estimators but also, potentially, by learned models that read the rolling Hurst as a feature. I~am not pre-committing to that follow-on study; I~am noting that the outcome here gates the next plan.
+
+\subsection{What this report is and is not}
+
+This is a registered protocol report. It declares what I~will measure, archives the protocol on Zenodo, reports a code-correctness pilot, and amends one methodological gap before the empirical run touches D1 or D2. It is not the empirical paper. The empirical paper exists if and only if the falsification check in prereg~\S12 returns a verdict on the 48-comparison family in August through October 2026.
+
+\begin{thebibliography}{99}
+
+\bibitem{peng1994dfa}
+C.-K. Peng, S. V. Buldyrev, S. Havlin, M. Simons, H. E. Stanley, and A. L. Goldberger.
+Mosaic organization of DNA nucleotides.
+\emph{Physical Review E}, 49(2):1685--1689, 1994.
+
+\bibitem{politisromano1994}
+D. N. Politis and J. P. Romano.
+The stationary bootstrap.
+\emph{Journal of the American Statistical Association}, 89(428):1303--1313, 1994.
+
+\bibitem{baiperron1998}
+J. Bai and P. Perron.
+Estimating and testing linear models with multiple structural changes.
+\emph{Econometrica}, 66(1):47--78, 1998.
+
+\bibitem{killick2012pelt}
+R. Killick, P. Fearnhead, and I. A. Eckley.
+Optimal detection of changepoints with a linear computational cost.
+\emph{Journal of the American Statistical Association}, 107(500):1590--1598, 2012.
+
+\bibitem{kantelhardt2002mfdfa}
+J. W. Kantelhardt, S. A. Zschiegner, E. Koscielny-Bunde, S. Havlin, A. Bunde, and H. E. Stanley.
+Multifractal detrended fluctuation analysis of nonstationary time series.
+\emph{Physica A: Statistical Mechanics and its Applications}, 316(1--4):87--114, 2002.
+
+\bibitem{faloutsoskamel1994}
+C. Faloutsos and I. Kamel.
+Beyond uniformity and independence: Analysis of R-trees using the concept of fractal dimension.
+\emph{Proc. ACM PODS}, pages 4--13, 1994.
+
+\bibitem{belussifaloutsos1995}
+A. Belussi and C. Faloutsos.
+Estimating the selectivity of spatial queries using the correlation fractal dimension.
+\emph{Proc. VLDB}, pages 299--310, 1995.
+
+\bibitem{kraska2018learnedindex}
+T. Kraska, A. Beutel, E. H. Chi, J. Dean, and N. Polyzotis.
+The case for learned index structures.
+\emph{Proc. ACM SIGMOD}, pages 489--504, 2018.
+
+\bibitem{zhang2023partitioning}
+Z. Zhang et al.
+Optimal sequence partitioning for Hurst exponent estimation.
+arXiv:2310.19051, 2023.
+\url{https://arxiv.org/abs/2310.19051}.
+
+\bibitem{cerqueti2022fuzzy}
+R. Cerqueti et al.
+Fuzzy clustering of time series with time-varying memory.
+\emph{International Journal of Approximate Reasoning}, 2022.
+\url{https://doi.org/10.1016/j.ijar.2022.10.005}.
+
+\bibitem{malempatihari2026fractal}
+D. Malempati Hari.
+Static and temporal fractal coupling between volatility and trading volume.
+Preprint, Zenodo, 2026.
+\href{https://doi.org/10.5281/zenodo.19611543}{doi:10.5281/zenodo.19611543}.
+
+\end{thebibliography}
+
+\end{document}
