@@ -194,6 +194,20 @@ The amendment adds four comparisons (D4 $\times$ B1--B4 $\times$ DFA), extending
 
 \paragraph{Why this is transferable.} The point of M-S6 is not Hurst-specific. Any adaptive partitioning study (regime-aware, variance-aware, or learned) faces the same vulnerability: bytes-read alone cannot adjudicate between a partitioner that recovers true structure and one that shreds noise into convenient-sized blocks. M-S6 is a generic operationalization of boundary quality given a ground-truth corpus, and the same idea (predicted-vs-ground-truth F1 with a tolerance rule) generalizes to any partitioning policy that reports candidate boundaries. I~think this is the more durable contribution of the amendment, separate from whether HURST-CI clears its threshold on D4.
 
+\subsection{Amendment 2: a second candidate trigger}
+\label{sec:amendment2}
+
+The first D4 pilot at v0.2.1 (n\_bootstrap = 50, window = 500, step = 200) returned a boundary F1 of 0.013 for HURST-CI: the candidate almost never fired even on a synthetic corpus with planted regime changes. To distinguish ``the trigger is too conservative'' from ``the pilot's bootstrap iteration count was too low'' I~ran an exploratory study (n\_series = 8, window = 500, step = 100, n\_bootstrap = 30, tolerance = 125; results in \texttt{experiments/trigger-exploration-2026-05.json}) sweeping a point-gap-only trigger against the registered CI-plus-gap trigger at four threshold values. At the registered $\theta = 0.10$:
+
+\begin{itemize}
+\item Registered CI+gap trigger: mean F1 $0.050 \pm 0.050$ (SE), with $\approx 1.4$ predicted boundaries per series.
+\item Point-gap-only trigger: mean F1 $0.373 \pm 0.048$ (SE), with $\approx 4.6$ predicted boundaries per series.
+\end{itemize}
+
+The 7$\times$ swing motivates Amendment 2~\cite{malempatihari2026amendment2}: register the point-gap-only criterion (\textbf{GAP-ONLY}) as a second candidate trigger alongside HURST-CI. Both triggers are evaluated on all four datasets at the registered n\_bootstrap = 1000. Amendment 2 adds two new secondary hypotheses, H2-S5 (trigger insensitivity on D1, where the two triggers should give similar answers if either captures the H2 effect) and H2-S6 (boundary-quality advantage of GAP-ONLY on D4 at the registered bootstrap count). The amendment extends the multiple-testing family from 52 to 68; Holm--Bonferroni is reapplied at family-wise $\alpha = 0.05$. Per~\S14 of v1, the exploratory study is labeled exploratory; H2-S5 and H2-S6 are confirmatory and pre-registered.
+
+Two interpretations of the exploratory finding remain open. \emph{Either} the bootstrap CI at $n=30$ is the bottleneck (the registered $n=1000$ narrows it by roughly $\sqrt{1000/30}\approx 5.8\times$ and may close the gap), \emph{or} the CI-disjoint requirement is structurally too conservative regardless of bootstrap precision. The empirical run will say which.
+
 \section{Reproducibility}
 
 Code: \url{https://github.com/mhdk1602/hurst-aware-partitioning}, MIT license. Tagged \texttt{v0.1.0-prereg} (registered protocol), \texttt{v0.2.0} (pilot), and \texttt{v0.2.1} (Amendment~1 implementation, D4 corpus, boundary F1). Pre-registration archived on Zenodo (concept DOI \href{https://doi.org/10.5281/zenodo.20188013}{10.5281/zenodo.20188013}; version DOIs \href{https://doi.org/10.5281/zenodo.20188014}{10.5281/zenodo.20188014} for v1 and \href{https://doi.org/10.5281/zenodo.20190347}{10.5281/zenodo.20190347} for Amendment~1 plus v0.2.1). All seeds pinned at \texttt{20260514}. The query library hashes to a SHA-256 in \texttt{experiments/query-library-v1.json.sha256}; reproductions can verify they have the same workload. Test coverage is on the scaffolding only; no D1 or D2 analyses have been performed prior to this writing.
@@ -304,6 +318,12 @@ D. Malempati Hari.
 Hurst-aware adaptive partitioning of persistent time series: Pre-registration v1.0.
 Zenodo, 2026.
 Concept DOI \href{https://doi.org/10.5281/zenodo.20188013}{10.5281/zenodo.20188013}; v1 DOI \href{https://doi.org/10.5281/zenodo.20188014}{10.5281/zenodo.20188014}; Amendment~1 + v0.2.1 DOI \href{https://doi.org/10.5281/zenodo.20190347}{10.5281/zenodo.20190347}.
+
+\bibitem{malempatihari2026amendment2}
+D. Malempati Hari.
+Pre-registration Amendment~2: A second candidate trigger (GAP-ONLY) for Hurst-aware adaptive partitioning.
+Companion archive in the hurst-aware-partitioning Zenodo concept DOI (latest version supersedes previous).
+2026.
 
 \end{thebibliography}
 
