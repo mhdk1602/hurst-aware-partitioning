@@ -39,7 +39,7 @@ The pre-registered hypothesis (paraphrased from prereg~\S3) is that on streaming
 
 This document is not the empirical paper. It is a registered protocol report. The empirical run on the S\&P 500 corpus and the Numenta Anomaly Benchmark is gated on a v1.0 protocol lock in August 2026 and will be reported once the 48 paired comparisons land in a single batch. What I report here is: (i) the registered protocol, (ii) a synthetic pilot on a 16-series fractional Gaussian noise subsample that validates the harness and identifies a methodological problem, and (iii) Amendment~1 to the protocol, which adds a boundary-quality secondary outcome and is itself pre-registered before any D1 or D2 analysis. The artifact aims at the credibility-strengthening role increasingly played by pre-empirical reports on arXiv: declare the protocol, surface what the pilot found, archive both publicly.
 
-I write this paper alone. The companion infrastructure on Hurst estimation originates from earlier work on volatility--volume fractal coupling~\cite{malempatihari2026fractal}.
+I write this paper alone. The companion infrastructure on Hurst estimation originates from earlier work on volatility--volume fractal coupling~\cite{malempatihari2026fractal}, and the methodological commitment to multi-scale descriptors as practical engineering signals is shared with a parallel program on multi-scale structural descriptors for governance-relevant patterns in data lineage graphs~\cite{malempatihari2026governance}. Both lines of work are public on Zenodo and the present report is a third entry in the same research program; \S\ref{sec:program} lists all three for cross-discoverability.
 
 \section{Background and Related Work}
 
@@ -196,7 +196,7 @@ The amendment adds four comparisons (D4 $\times$ B1--B4 $\times$ DFA), extending
 
 \section{Reproducibility}
 
-Code: \url{https://github.com/mhdk1602/hurst-aware-partitioning}, MIT license. Tagged \texttt{v0.1.0-prereg} (registered protocol) and \texttt{v0.2.0} (pilot). Pre-registration archived on Zenodo (concept DOI \href{https://doi.org/10.5281/zenodo.20188013}{10.5281/zenodo.20188013}, version DOI \href{https://doi.org/10.5281/zenodo.20188014}{10.5281/zenodo.20188014}). All seeds pinned at \texttt{20260514}. The query library hashes to a SHA-256 in \texttt{experiments/query-library-v1.json.sha256}; reproductions can verify they have the same workload. Test coverage is on the scaffolding only; no D1 or D2 analyses have been performed prior to this writing.
+Code: \url{https://github.com/mhdk1602/hurst-aware-partitioning}, MIT license. Tagged \texttt{v0.1.0-prereg} (registered protocol), \texttt{v0.2.0} (pilot), and \texttt{v0.2.1} (Amendment~1 implementation, D4 corpus, boundary F1). Pre-registration archived on Zenodo (concept DOI \href{https://doi.org/10.5281/zenodo.20188013}{10.5281/zenodo.20188013}; version DOIs \href{https://doi.org/10.5281/zenodo.20188014}{10.5281/zenodo.20188014} for v1 and \href{https://doi.org/10.5281/zenodo.20190347}{10.5281/zenodo.20190347} for Amendment~1 plus v0.2.1). All seeds pinned at \texttt{20260514}. The query library hashes to a SHA-256 in \texttt{experiments/query-library-v1.json.sha256}; reproductions can verify they have the same workload. Test coverage is on the scaffolding only; no D1 or D2 analyses have been performed prior to this writing.
 
 \section{Open Questions and Roadmap}
 
@@ -217,6 +217,19 @@ H2 is the prior step for H1 in my research program, which asks whether a learned
 \subsection{What this report is and is not}
 
 This is a registered protocol report. It declares what I~will measure, archives the protocol on Zenodo, reports a code-correctness pilot, and amends one methodological gap before the empirical run touches D1 or D2. It is not the empirical paper. The empirical paper exists if and only if the falsification check in prereg~\S12 returns a verdict on the 48-comparison family in August through October 2026.
+
+\subsection{Position in the wider research program}
+\label{sec:program}
+
+I~want this report to be discoverable from, and pointable back to, two parallel public artifacts that share its methodological commitments. Each is openly archived on Zenodo with a citable concept DOI.
+
+\begin{itemize}
+\item \textbf{Fractal-pv-coupling.} \emph{Static and Temporal Fractal Coupling Between Volatility and Trading Volume: Evidence from S\&P 500 Stocks, 2015--2026}~\cite{malempatihari2026fractal}. Code at \url{https://github.com/mhdk1602/fractal-pv-coupling}, concept DOI \href{https://doi.org/10.5281/zenodo.19611543}{10.5281/zenodo.19611543}. The Hurst estimation primitives and the block-bootstrap pattern used here originate there; the relationship is mechanical, not just thematic.
+\item \textbf{Multi-scale governance descriptors.} \emph{Multi-Scale Structural Descriptors for Governance-Relevant Patterns in Data Lineage Graphs}~\cite{malempatihari2026governance}. Code at \url{https://github.com/mhdk1602/multiscale-governance-descriptors}, concept DOI \href{https://doi.org/10.5281/zenodo.20099999}{10.5281/zenodo.20099999} (latest version v2.0.0, 2026-05-10, DOI 10.5281/zenodo.20101643). That work computes multi-scale structural descriptors (community stability, blast-radius concentration, spectral gap, persistent homology) on data-lineage graphs and validates them across organizations (Cal-ITP, Mattermost). The shared methodological commitment is to treat multi-scale descriptors as practical engineering signals rather than theoretical curiosities, evaluated on real systems with explicit baselines.
+\item \textbf{This report.} \emph{Hurst-Aware Adaptive Partitioning of Persistent Time Series} (the present document). Code at \url{https://github.com/mhdk1602/hurst-aware-partitioning}, concept DOI \href{https://doi.org/10.5281/zenodo.20188013}{10.5281/zenodo.20188013}.
+\end{itemize}
+
+The three artifacts cross-reference each other: scale-aware Hurst estimation in the volatility--volume paper, multi-scale graph descriptors in the governance paper, and rolling-window scale-aware partitioning here. The hypothesis a reader can hold across the three is the same one: that scale structure in real data is exploitable by engineering decisions, and that this exploitation can be made empirically falsifiable rather than rhetorical.
 
 \begin{thebibliography}{99}
 
@@ -274,9 +287,23 @@ Fuzzy clustering of time series with time-varying memory.
 
 \bibitem{malempatihari2026fractal}
 D. Malempati Hari.
-Static and temporal fractal coupling between volatility and trading volume.
-Preprint, Zenodo, 2026.
-\href{https://doi.org/10.5281/zenodo.19611543}{doi:10.5281/zenodo.19611543}.
+Static and temporal fractal coupling between volatility and trading volume: Evidence from S\&P 500 Stocks, 2015--2026.
+Code, manuscript source, and replication materials.
+Zenodo, 2026.
+Concept DOI \href{https://doi.org/10.5281/zenodo.19611543}{10.5281/zenodo.19611543}.
+
+\bibitem{malempatihari2026governance}
+D. Malempati Hari.
+Multi-scale structural descriptors for governance-relevant patterns in data lineage graphs.
+v2.0.0 (with cross-organization validation on Cal-ITP and Mattermost).
+Zenodo, 2026.
+Concept DOI \href{https://doi.org/10.5281/zenodo.20099999}{10.5281/zenodo.20099999}; version DOI \href{https://doi.org/10.5281/zenodo.20101643}{10.5281/zenodo.20101643}.
+
+\bibitem{malempatihari2026prereg}
+D. Malempati Hari.
+Hurst-aware adaptive partitioning of persistent time series: Pre-registration v1.0.
+Zenodo, 2026.
+Concept DOI \href{https://doi.org/10.5281/zenodo.20188013}{10.5281/zenodo.20188013}; v1 DOI \href{https://doi.org/10.5281/zenodo.20188014}{10.5281/zenodo.20188014}; Amendment~1 + v0.2.1 DOI \href{https://doi.org/10.5281/zenodo.20190347}{10.5281/zenodo.20190347}.
 
 \end{thebibliography}
 
