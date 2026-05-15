@@ -1,17 +1,22 @@
 # Hurst-Aware Adaptive Partitioning of Persistent Time Series
 
-[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.20188013.svg)](https://doi.org/10.5281/zenodo.20188013)
+[![DOI: code+prereg](https://zenodo.org/badge/DOI/10.5281/zenodo.20188013.svg)](https://doi.org/10.5281/zenodo.20188013)
+[![DOI: working paper](https://img.shields.io/badge/DOI%3A%20working%20paper-10.5281%2Fzenodo.20192400-blue.svg)](https://doi.org/10.5281/zenodo.20192400)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Python](https://img.shields.io/badge/python-3.10%2B-blue.svg)](https://www.python.org/downloads/)
 [![Pre-registered](https://img.shields.io/badge/status-pre--registration-orange.svg)](./prereg/h2-prereg-v1.md)
 
-**Pre-registration and reproducibility package** for a benchmark study of Hurst-aware adaptive chunk-boundary partitioning against fixed-interval (TimescaleDB-style) and variance-aware (CUSUM) baselines.
+**Pre-registration, reproducibility package, and a published working paper** for a benchmark study of Hurst-aware adaptive chunk-boundary partitioning against fixed-interval (TimescaleDB-style) and variance-aware (CUSUM) baselines.
 
 > **Status.** This release archives the pre-registered protocol and reference scaffolding only. **No empirical results on the registered datasets are included.** All analyses on D1 (S&P 500) and D2 (NAB) will be run end-to-end after the protocol is locked at v1.0 final.
 
 **Author:** [Dineshkumar Malempati Hari](https://orcid.org/0009-0003-1036-9477), Independent Researcher.
 
-**Companion paper:** [Static and Temporal Fractal Coupling Between Volatility and Trading Volume](https://doi.org/10.5281/zenodo.19611543) — the Hurst estimation infrastructure used here originates from that paper.
+**Companion artifacts (cross-referenced for circular discoverability):**
+
+- [*Working paper / protocol report*](https://doi.org/10.5281/zenodo.20192400) (Zenodo, May 2026) — the formal write-up of the registered protocol, the D3 synthetic pilot, and Amendment 1. Source `.tex` and compiled PDF in [`research/paper/`](./research/paper/).
+- [*Static and Temporal Fractal Coupling Between Volatility and Trading Volume*](https://doi.org/10.5281/zenodo.19611543) — the Hurst estimation infrastructure used here originates from that paper.
+- [*Multi-Scale Structural Descriptors for Governance-Relevant Patterns in Data Lineage Graphs*](https://doi.org/10.5281/zenodo.20099999) — a sibling artifact sharing the multi-scale descriptors methodology in a different problem domain (governance, not time series).
 
 ---
 
