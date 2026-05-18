@@ -1,12 +1,30 @@
-# Hurst-Aware Adaptive Partitioning of Persistent Time Series
+<p align="center">
+  <img src="assets/readme/partitioning-hero.svg" alt="Hurst-Aware Adaptive Partitioning hero graphic" width="100%">
+</p>
 
-[![DOI: code+prereg](https://zenodo.org/badge/DOI/10.5281/zenodo.20188013.svg)](https://doi.org/10.5281/zenodo.20188013)
-[![DOI: working paper](https://img.shields.io/badge/DOI%3A%20working%20paper-10.5281%2Fzenodo.20192400-blue.svg)](https://doi.org/10.5281/zenodo.20192400)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![Python](https://img.shields.io/badge/python-3.10%2B-blue.svg)](https://www.python.org/downloads/)
-[![Pre-registered](https://img.shields.io/badge/status-pre--registration-orange.svg)](./prereg/h2-prereg-v1.md)
+<h1 align="center">Hurst-Aware Adaptive Partitioning of Persistent Time Series</h1>
 
-**Pre-registration, reproducibility package, and a published working paper** for a benchmark study of Hurst-aware adaptive chunk-boundary partitioning against fixed-interval (TimescaleDB-style) and variance-aware (CUSUM) baselines.
+<p align="center">
+  <strong>Pre-registration, reproducibility package, and working paper for cutting chunk boundaries where long-range memory actually breaks.</strong>
+</p>
+
+<p align="center">
+  <a href="https://doi.org/10.5281/zenodo.20188013"><img alt="Code + prereg DOI 10.5281/zenodo.20188013" src="https://img.shields.io/badge/code%2Fprereg-10.5281%2Fzenodo.20188013-2f6f8f?style=for-the-badge&logo=zenodo&logoColor=white"></a>
+  <a href="https://doi.org/10.5281/zenodo.20192400"><img alt="Working paper DOI 10.5281/zenodo.20192400" src="https://img.shields.io/badge/working_paper-10.5281%2Fzenodo.20192400-6ea8fe?style=for-the-badge&logo=zenodo&logoColor=white"></a>
+  <a href="./prereg/h2-prereg-v1.md"><img alt="Pre-registered v0.1.0" src="https://img.shields.io/badge/status-pre--registered_v0.1.0-f5b84b?style=for-the-badge"></a>
+  <img alt="Python 3.10+" src="https://img.shields.io/badge/python-3.10%2B-3776ab?style=for-the-badge&logo=python&logoColor=white">
+  <img alt="License MIT" src="https://img.shields.io/badge/license-MIT-55d6be?style=for-the-badge">
+</p>
+
+<p align="center">
+  <a href="#claim">Claim</a> /
+  <a href="#what-this-repository-is">Scope</a> /
+  <a href="#why-pre-registration">Why prereg</a> /
+  <a href="#reproducibility-quick-start">Replicate</a> /
+  <a href="#connection-to-the-wider-research-program">Wider program</a>
+</p>
+
+## Overview
 
 > **Status.** This release archives the pre-registered protocol and reference scaffolding only. **No empirical results on the registered datasets are included.** All analyses on D1 (S&P 500) and D2 (NAB) will be run end-to-end after the protocol is locked at v1.0 final.
 
@@ -14,17 +32,17 @@
 
 **Companion artifacts (cross-referenced for circular discoverability):**
 
-- [*Working paper / protocol report*](https://doi.org/10.5281/zenodo.20192400) (Zenodo, May 2026) — the formal write-up of the registered protocol, the D3 synthetic pilot, and Amendment 1. Source `.tex` and compiled PDF in [`research/paper/`](./research/paper/).
-- [*Static and Temporal Fractal Coupling Between Volatility and Trading Volume*](https://doi.org/10.5281/zenodo.19611543) — the Hurst estimation infrastructure used here originates from that paper.
-- [*Multi-Scale Structural Descriptors for Governance-Relevant Patterns in Data Lineage Graphs*](https://doi.org/10.5281/zenodo.20099999) — a sibling artifact sharing the multi-scale descriptors methodology in a different problem domain (governance, not time series).
+- [*Working paper / protocol report*](https://doi.org/10.5281/zenodo.20192400) (Zenodo, May 2026) &#8212; the formal write-up of the registered protocol, the D3 synthetic pilot, and Amendment 1. Source `.tex` and compiled PDF in [`research/paper/`](./research/paper/).
+- [*Static and Temporal Fractal Coupling Between Volatility and Trading Volume*](https://doi.org/10.5281/zenodo.19611543) &#8212; the Hurst estimation infrastructure used here originates from that paper.
+- [*Multi-Scale Structural Descriptors for Governance-Relevant Patterns in Data Lineage Graphs*](https://doi.org/10.5281/zenodo.20099999) &#8212; a sibling artifact sharing the multi-scale descriptors methodology in a different problem domain (governance, not time series).
 
----
-
-## What this repository is
+## Claim
 
 A pre-registered, falsifiable empirical study of one specific engineering claim:
 
 > On time series with long-range dependence (H > 0.6), drawing chunk boundaries at statistically detected regime breaks in the rolling Hurst estimate reduces bytes read per query relative to fixed-interval partitioning, by 20-40%, with a 95% CI strictly above zero.
+
+## What this repository is
 
 The pre-registration in [`prereg/h2-prereg-v1.md`](./prereg/h2-prereg-v1.md) specifies the hypotheses, datasets, estimator battery, baselines, query workload, primary and secondary outcomes, statistical tests, **falsification criteria**, multiple-testing protocol, stopping rules, and deviations protocol. It is archived on Zenodo at the DOI in `CITATION.cff`, with a permanent Git tag at `v0.1.0-prereg`.
 
